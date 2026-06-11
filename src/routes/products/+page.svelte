@@ -12,6 +12,14 @@
   let showDeleteModal = $state(false);
   let deleteTargetId = $state('');
   let currentProduct = $state({ id: '', sku: '', nama: '', ukuran_ml: 30, status: 'ready' });
+  let searchQuery = $state('');
+
+  let filteredProducts = $derived(
+    data.products.filter(p => 
+      p.nama.toLowerCase().includes(searchQuery.toLowerCase()) || 
+      p.sku.toLowerCase().includes(searchQuery.toLowerCase())
+    )
+  );
 
   function openAdd() {
     editMode = false;
@@ -32,9 +40,8 @@
 
 <div class="bg-white dark:bg-white/[0.02] rounded-2xl  border border-slate-200 dark:border-white/[0.05] overflow-hidden transition-colors duration-300">
   <div class="px-4 sm:px-6 py-4 sm:py-5 border-b border-slate-200 dark:border-white/[0.05] flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-transparent dark:bg-white/[0.01]">
-    <div>
-      <h2 class="text-lg font-semibold text-slate-800 dark:text-slate-100">Daftar Produk</h2>
-      <p class="text-sm text-slate-500 dark:text-slate-400 mt-1">Kelola data master produk parfum.</p>
+    <div class="w-full sm:max-w-xs">
+      <input type="search" bind:value={searchQuery} placeholder="Cari nama atau SKU produk..." class="w-full rounded-lg border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:border-blue-500 focus:ring-blue-500 text-sm" />
     </div>
     <button onclick={openAdd} class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-medium text-sm flex items-center gap-2 transition-colors w-full sm:w-auto justify-center">
       <Plus class="w-4 h-4" /> Tambah Produk
@@ -53,14 +60,14 @@
         </tr>
       </thead>
       <tbody class="divide-y divide-slate-200 dark:divide-slate-700">
-        {#if data.products.length === 0}
+        {#if filteredProducts.length === 0}
           <tr>
             <td colspan="5" class="px-6 py-8 text-center text-slate-500 dark:text-slate-400">
               Belum ada produk. Tambahkan produk pertama Anda.
             </td>
           </tr>
         {/if}
-        {#each data.products as product}
+        {#each filteredProducts as product}
           <tr class="hover:bg-transparent dark:hover:bg-white/[0.04] transition-colors">
             <td class="px-4 sm:px-6 py-4 font-medium text-slate-900 dark:text-slate-200">{product.sku}</td>
             <td class="px-4 sm:px-6 py-4">{product.nama}</td>

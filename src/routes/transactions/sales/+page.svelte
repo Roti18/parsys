@@ -12,6 +12,15 @@
   let isEditing = $state(false);
   let showDeleteModal = $state(false);
   let deleteTargetId = $state('');
+  let isSubmitting = $state(false);
+  let searchQuery = $state('');
+
+  let filteredSales = $derived(
+    data.sales.filter(s => 
+      s.product.nama.toLowerCase().includes(searchQuery.toLowerCase()) || 
+      s.channel.toLowerCase().includes(searchQuery.toLowerCase())
+    )
+  );
 
   function getTodayDate() {
     const d = new Date();
@@ -48,48 +57,48 @@
   <title>Parsys | Penjualan</title>
 </svelte:head>
 
-<div class="bg-white dark:bg-white/[0.02] rounded-2xl  border border-slate-200 dark:border-white/[0.05] overflow-hidden transition-colors duration-300">
+<div class="bg-white dark:bg-white/[0.02] rounded-2xl  border border-slate-200 dark:border-white/[0.05] overflow-hidden transition-colors duration-300 w-full">
   <div class="px-4 sm:px-6 py-4 sm:py-5 border-b border-slate-200 dark:border-white/[0.05] flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-transparent dark:bg-white/[0.01]">
-    <div>
-      <h2 class="text-lg font-semibold text-slate-800 dark:text-slate-100">Histori Penjualan</h2>
-      <p class="text-sm text-slate-500 dark:text-slate-400 mt-1">Catat transaksi penjualan dan admin fee per channel.</p>
+    <div class="w-full sm:max-w-xs">
+      <input type="search" bind:value={searchQuery} placeholder="Cari produk atau channel..." class="w-full rounded-lg border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:border-blue-500 focus:ring-blue-500 text-sm" />
     </div>
-    <button onclick={openAdd} class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-medium text-sm flex items-center gap-2 transition-colors  w-full sm:w-auto justify-center">
+    <button onclick={openAdd} class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-medium text-sm flex items-center gap-2 transition-colors w-full sm:w-auto justify-center">
       <Plus class="w-4 h-4" /> Input Penjualan
     </button>
   </div>
 
-  <div class="overflow-x-auto">
-    <table class="w-full text-left text-sm text-slate-600 dark:text-slate-300 whitespace-nowrap">
+  <div class="overflow-x-auto w-full">
+    <table class="w-full text-left text-sm text-slate-600 dark:text-slate-300">
       <thead class="bg-slate-50 dark:bg-transparent text-slate-500 dark:text-slate-400 font-medium border-b border-slate-200 dark:border-white/[0.05]">
         <tr>
-          <th class="px-4 sm:px-6 py-4">Tanggal</th>
-          <th class="px-4 sm:px-6 py-4">Produk</th>
-          <th class="px-4 sm:px-6 py-4">Channel</th>
-          <th class="px-4 sm:px-6 py-4">Harga Jual & Qty</th>
-          <th class="px-4 sm:px-6 py-4">Admin Fee</th>
-          <th class="px-4 sm:px-6 py-4">Profit Bersih</th>
-          <th class="px-4 sm:px-6 py-4 text-right">Aksi</th>
+          <th class="px-4 sm:px-6 py-4 whitespace-nowrap">Tanggal</th>
+          <th class="px-4 sm:px-6 py-4 whitespace-nowrap">Produk</th>
+          <th class="px-4 sm:px-6 py-4 whitespace-nowrap">Channel</th>
+          <th class="px-4 sm:px-6 py-4 whitespace-nowrap">Harga Jual & Qty</th>
+          <th class="px-4 sm:px-6 py-4 whitespace-nowrap">Modal / pcs</th>
+          <th class="px-4 sm:px-6 py-4 whitespace-nowrap">Admin Fee</th>
+          <th class="px-4 sm:px-6 py-4 whitespace-nowrap">Profit Bersih</th>
+          <th class="px-4 sm:px-6 py-4 text-right whitespace-nowrap">Aksi</th>
         </tr>
       </thead>
       <tbody class="divide-y divide-slate-200 dark:divide-slate-700">
-        {#if data.sales.length === 0}
+        {#if filteredSales.length === 0}
           <tr>
-            <td colspan="6" class="px-6 py-8 text-center text-slate-500 dark:text-slate-400">
+            <td colspan="8" class="px-6 py-8 text-center text-slate-500 dark:text-slate-400">
               Belum ada data penjualan.
             </td>
           </tr>
         {/if}
-        {#each data.sales as item}
+        {#each filteredSales as item}
           {@const gross = item.harga_jual * item.qty}
           {@const totalModal = item.modal * item.qty}
           {@const profit = gross - totalModal - item.fee}
           <tr class="hover:bg-transparent dark:hover:bg-white/[0.04] transition-colors">
-            <td class="px-4 sm:px-6 py-4">{new Date(item.tanggal).toLocaleString('id-ID', { dateStyle: 'medium', timeStyle: 'short'})}</td>
-            <td class="px-4 sm:px-6 py-4 font-medium text-slate-900 dark:text-slate-200">
+            <td class="px-4 sm:px-6 py-4 whitespace-nowrap">{new Date(item.tanggal).toLocaleString('id-ID', { dateStyle: 'medium', timeStyle: 'short'})}</td>
+            <td class="px-4 sm:px-6 py-4 font-medium text-slate-900 dark:text-slate-200 whitespace-nowrap">
               {item.product.nama} <span class="text-slate-400 dark:text-slate-500 font-normal text-xs ml-1">({item.product.ukuran_ml}ml)</span>
             </td>
-            <td class="px-4 sm:px-6 py-4">
+            <td class="px-4 sm:px-6 py-4 whitespace-nowrap">
               <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border
                 {item.channel === 'Shopee' ? 'bg-orange-50 text-orange-700 border-orange-200 dark:bg-orange-500/10 dark:text-orange-400 dark:border-orange-500/20' : 
                  item.channel === 'Tokopedia' ? 'bg-green-50 text-green-700 border-green-200 dark:bg-green-500/10 dark:text-green-400 dark:border-green-500/20' : 
@@ -98,7 +107,7 @@
                 {item.channel}
               </span>
             </td>
-            <td class="px-4 sm:px-6 py-4">
+            <td class="px-4 sm:px-6 py-4 whitespace-nowrap">
               <div class="flex flex-col">
                 <span class="font-medium text-slate-900 dark:text-slate-200">{formatIDR(item.harga_jual)} <span class="text-xs text-slate-500 dark:text-slate-400 font-normal">/pcs</span></span>
                 <span class="inline-flex items-center gap-1 text-xs text-blue-600 dark:text-blue-400 mt-1 font-semibold">
@@ -106,11 +115,12 @@
                 </span>
               </div>
             </td>
-            <td class="px-4 sm:px-6 py-4 text-rose-600 dark:text-rose-400">{formatIDR(item.fee)}</td>
-            <td class="px-4 sm:px-6 py-4 font-bold {profit >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}">
+            <td class="px-4 sm:px-6 py-4 font-medium text-slate-500 dark:text-slate-400 whitespace-nowrap">{formatIDR(item.modal)}</td>
+            <td class="px-4 sm:px-6 py-4 text-rose-600 dark:text-rose-400 whitespace-nowrap">{formatIDR(item.fee)}</td>
+            <td class="px-4 sm:px-6 py-4 font-bold whitespace-nowrap {profit >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}">
               {formatIDR(profit)}
             </td>
-            <td class="px-4 sm:px-6 py-4 text-right">
+            <td class="px-4 sm:px-6 py-4 text-right whitespace-nowrap">
               <div class="flex items-center justify-end gap-2">
                 <button onclick={() => openEdit(item)} class="p-1 text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors" title="Edit">
                   <Pencil class="w-4 h-4" />
@@ -129,8 +139,10 @@
 
 <Modal bind:show={showModal} title={isEditing ? "Edit Penjualan" : "Input Penjualan"}>
   <form action={isEditing ? "?/update" : "?/create"} method="POST" use:enhance={() => {
+    isSubmitting = true;
     return async ({ update }) => {
       await update();
+      isSubmitting = false;
       showModal = false;
     };
   }} class="space-y-4">
@@ -201,11 +213,21 @@
     </div>
 
     <div class="pt-4 flex justify-end gap-3">
-      <button type="button" onclick={() => showModal = false} class="px-4 py-2 text-sm font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition-colors">
+      <button type="button" disabled={isSubmitting} onclick={() => showModal = false} class="px-4 py-2 text-sm font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition-colors disabled:opacity-50">
         Batal
       </button>
-      <button type="submit" class="px-4 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors ">
-        Simpan Penjualan
+      <button type="submit" disabled={isSubmitting} class="px-4 py-2 flex items-center gap-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors disabled:opacity-50 relative">
+        {#if isSubmitting}
+          <div class="absolute inset-0 flex items-center justify-center">
+            <svg class="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+              <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+              <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            </svg>
+          </div>
+          <span class="opacity-0">Simpan Penjualan</span>
+        {:else}
+          Simpan Penjualan
+        {/if}
       </button>
     </div>
   </form>
