@@ -1,5 +1,5 @@
 import { db } from '$lib/server/db';
-import { products, restocks, sales } from '$lib/server/db/schema';
+import { products, restocks, sales, sale_restocks } from '$lib/server/db/schema';
 import { eq, desc, and } from 'drizzle-orm';
 import { fail } from '@sveltejs/kit';
 import type { PageServerLoad, Actions } from './$types';
@@ -53,25 +53,57 @@ export const actions: Actions = {
 		const productOwner = await db.select().from(products).where(and(eq(products.id, product_id), eq(products.user_id, locals.user.id)));
 		if (productOwner.length === 0) return fail(403, { message: 'Forbidden' });
 
-		// Ambil modal terbaru dari restock terakhir
-		const latestRestock = await db
-			.select()
-			.from(restocks)
-			.where(and(eq(restocks.product_id, product_id), eq(restocks.user_id, locals.user.id)))
-			.orderBy(desc(restocks.tanggal))
-			.limit(1);
+		await db.transaction(async (tx) => {
+			const sale_id = crypto.randomUUID();
+			
+			// Ambil restock yang masih ada sisa, urutkan dari paling lama (FIFO)
+			const availableRestocks = await tx
+				.select()
+				.from(restocks)
+				.where(and(eq(restocks.product_id, product_id), eq(restocks.user_id, locals.user.id)))
+				.orderBy(restocks.tanggal);
 
-		const modal = latestRestock.length > 0 ? latestRestock[0].modal : 0;
+			let saleQtyNeeded = qty;
+			let totalModalConsumed = 0;
+			let totalQtyConsumed = 0;
 
-		await db.insert(sales).values({
-			user_id: locals.user.id,
-			product_id,
-			tanggal,
-			harga_jual,
-			modal,
-			fee,
-			channel,
-			qty
+			for (const r of availableRestocks) {
+				if (saleQtyNeeded <= 0) break;
+				if (r.sisa_qty > 0) {
+					const take = Math.min(saleQtyNeeded, r.sisa_qty);
+					const newSisa = r.sisa_qty - take;
+					saleQtyNeeded -= take;
+
+					totalModalConsumed += take * r.modal;
+					totalQtyConsumed += take;
+
+					// Update sisa_qty di restock
+					await tx.update(restocks).set({ sisa_qty: newSisa }).where(eq(restocks.id, r.id));
+
+					// Catat ke sale_restocks
+					await tx.insert(sale_restocks).values({
+						sale_id,
+						restock_id: r.id,
+						qty: take
+					});
+				}
+			}
+
+			// Calculate rata-rata modal
+			const modal = totalQtyConsumed > 0 ? Math.floor(totalModalConsumed / totalQtyConsumed) : 0;
+
+			// Insert sale record
+			await tx.insert(sales).values({
+				id: sale_id,
+				user_id: locals.user.id,
+				product_id,
+				tanggal,
+				harga_jual,
+				modal,
+				fee,
+				channel,
+				qty
+			});
 		});
 
 		return { success: true };
@@ -94,14 +126,60 @@ export const actions: Actions = {
 		const saleOwner = await db.select().from(sales).where(and(eq(sales.id, id), eq(sales.user_id, locals.user.id)));
 		if (saleOwner.length === 0) return fail(403, { message: 'Forbidden' });
 
-		await db.update(sales).set({
-			product_id,
-			tanggal,
-			harga_jual,
-			fee,
-			channel,
-			qty
-		}).where(and(eq(sales.id, id), eq(sales.user_id, locals.user.id)));
+		await db.transaction(async (tx) => {
+			// REVERT OLD SALE DEDUCTIONS
+			const oldConsumptions = await tx.select().from(sale_restocks).where(eq(sale_restocks.sale_id, id));
+			for (const sc of oldConsumptions) {
+				const r = await tx.select().from(restocks).where(eq(restocks.id, sc.restock_id));
+				if (r.length > 0) {
+					await tx.update(restocks).set({ sisa_qty: r[0].sisa_qty + sc.qty }).where(eq(restocks.id, sc.restock_id));
+				}
+			}
+			await tx.delete(sale_restocks).where(eq(sale_restocks.sale_id, id));
+
+			// RUN FIFO FOR NEW QTY / PRODUCT
+			const availableRestocks = await tx
+				.select()
+				.from(restocks)
+				.where(and(eq(restocks.product_id, product_id), eq(restocks.user_id, locals.user.id)))
+				.orderBy(restocks.tanggal);
+
+			let saleQtyNeeded = qty;
+			let totalModalConsumed = 0;
+			let totalQtyConsumed = 0;
+
+			for (const r of availableRestocks) {
+				if (saleQtyNeeded <= 0) break;
+				if (r.sisa_qty > 0) {
+					const take = Math.min(saleQtyNeeded, r.sisa_qty);
+					const newSisa = r.sisa_qty - take;
+					saleQtyNeeded -= take;
+
+					totalModalConsumed += take * r.modal;
+					totalQtyConsumed += take;
+
+					await tx.update(restocks).set({ sisa_qty: newSisa }).where(eq(restocks.id, r.id));
+
+					await tx.insert(sale_restocks).values({
+						sale_id: id,
+						restock_id: r.id,
+						qty: take
+					});
+				}
+			}
+
+			const modal = totalQtyConsumed > 0 ? Math.floor(totalModalConsumed / totalQtyConsumed) : 0;
+
+			await tx.update(sales).set({
+				product_id,
+				tanggal,
+				harga_jual,
+				modal,
+				fee,
+				channel,
+				qty
+			}).where(eq(sales.id, id));
+		});
 
 		return { success: true };
 	},
@@ -114,7 +192,20 @@ export const actions: Actions = {
 		const saleOwner = await db.select().from(sales).where(and(eq(sales.id, id), eq(sales.user_id, locals.user.id)));
 		if (saleOwner.length === 0) return fail(403, { message: 'Forbidden' });
 
-		await db.delete(sales).where(and(eq(sales.id, id), eq(sales.user_id, locals.user.id)));
+		await db.transaction(async (tx) => {
+			// REVERT OLD SALE DEDUCTIONS
+			const oldConsumptions = await tx.select().from(sale_restocks).where(eq(sale_restocks.sale_id, id));
+			for (const sc of oldConsumptions) {
+				const r = await tx.select().from(restocks).where(eq(restocks.id, sc.restock_id));
+				if (r.length > 0) {
+					await tx.update(restocks).set({ sisa_qty: r[0].sisa_qty + sc.qty }).where(eq(restocks.id, sc.restock_id));
+				}
+			}
+			
+			// Deleting sales will cascade delete sale_restocks, but we do it manually anyway
+			await tx.delete(sale_restocks).where(eq(sale_restocks.sale_id, id));
+			await tx.delete(sales).where(eq(sales.id, id));
+		});
 		
 		return { success: true };
 	}

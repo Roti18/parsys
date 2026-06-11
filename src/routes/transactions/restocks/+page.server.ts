@@ -15,6 +15,7 @@ export const load: PageServerLoad = async ({ locals }) => {
 			tanggal: restocks.tanggal,
 			modal: restocks.modal,
 			qty: restocks.qty,
+			sisa_qty: restocks.sisa_qty,
 			product: {
 				nama: products.nama,
 				sku: products.sku,
@@ -53,7 +54,8 @@ export const actions: Actions = {
 			product_id,
 			tanggal,
 			modal,
-			qty
+			qty,
+			sisa_qty: qty // Set awal sisa = qty
 		});
 
 		// If product was "habis", we should ideally mark it "ready"
@@ -76,11 +78,16 @@ export const actions: Actions = {
 		const restockOwner = await db.select().from(restocks).where(and(eq(restocks.id, id), eq(restocks.user_id, locals.user.id)));
 		if (restockOwner.length === 0) return fail(403, { message: 'Forbidden' });
 
+		// Jika qty diubah, kita harus menyesuaikan sisa_qty juga (qty_baru - qty_lama)
+		const selisih = qty - restockOwner[0].qty;
+		const newSisa = Math.max(0, restockOwner[0].sisa_qty + selisih);
+
 		await db.update(restocks).set({
 			product_id,
 			tanggal,
 			modal,
-			qty
+			qty,
+			sisa_qty: newSisa
 		}).where(and(eq(restocks.id, id), eq(restocks.user_id, locals.user.id)));
 
 		return { success: true };

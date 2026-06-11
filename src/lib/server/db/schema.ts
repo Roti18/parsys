@@ -46,6 +46,7 @@ export const restocks = sqliteTable('restocks', {
 	tanggal: integer('tanggal', { mode: 'timestamp' }).notNull(),
 	modal: integer('modal').notNull(),
 	qty: integer('qty').notNull(),
+	sisa_qty: integer('sisa_qty').notNull().default(0),
 	created_at: integer('created_at', { mode: 'timestamp' })
 		.notNull()
 		.$defaultFn(() => new Date())
@@ -67,6 +68,22 @@ export const sales = sqliteTable('sales', {
 	fee: integer('fee').notNull().default(0),
 	channel: text('channel').notNull(),
 	qty: integer('qty').notNull().default(1),
+	created_at: integer('created_at', { mode: 'timestamp' })
+		.notNull()
+		.$defaultFn(() => new Date())
+});
+
+export const sale_restocks = sqliteTable('sale_restocks', {
+	id: text('id')
+		.primaryKey()
+		.$defaultFn(() => crypto.randomUUID()),
+	sale_id: text('sale_id')
+		.notNull()
+		.references(() => sales.id, { onDelete: 'cascade' }),
+	restock_id: text('restock_id')
+		.notNull()
+		.references(() => restocks.id, { onDelete: 'cascade' }),
+	qty: integer('qty').notNull(),
 	created_at: integer('created_at', { mode: 'timestamp' })
 		.notNull()
 		.$defaultFn(() => new Date())
