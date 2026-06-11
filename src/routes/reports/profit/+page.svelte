@@ -17,11 +17,7 @@
   <title>Parsys | Laporan Profit</title>
 </svelte:head>
 
-<div class="space-y-6">
-  <div>
-    <h2 class="text-2xl font-bold text-slate-800 dark:text-slate-100">Laporan Profit</h2>
-    <p class="text-slate-500 dark:text-slate-400 mt-1">Pantau perkembangan profit bisnis Anda dari waktu ke waktu.</p>
-  </div>
+<div class="space-y-6 pt-2">
 
   <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 sm:gap-6">
     <StatCard 
