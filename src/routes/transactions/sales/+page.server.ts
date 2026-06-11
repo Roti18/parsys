@@ -1,6 +1,6 @@
 import { db } from '$lib/server/db';
 import { products, restocks, sales, sale_restocks } from '$lib/server/db/schema';
-import { eq, desc, and } from 'drizzle-orm';
+import { eq, desc, and, sum } from 'drizzle-orm';
 import { fail } from '@sveltejs/kit';
 import type { PageServerLoad, Actions } from './$types';
 
@@ -8,6 +8,16 @@ export const load: PageServerLoad = async ({ locals }) => {
 	if (!locals.user) return { products: [], sales: [] };
 
 	const allProducts = await db.select().from(products).where(eq(products.user_id, locals.user.id)).orderBy(products.nama);
+	
+	const availableStockQuery = await db.select({
+		product_id: restocks.product_id,
+		total_sisa: sum(restocks.sisa_qty)
+	}).from(restocks).where(eq(restocks.user_id, locals.user.id)).groupBy(restocks.product_id);
+
+	const productsWithStock = allProducts.filter(p => {
+		const stock = availableStockQuery.find(r => r.product_id === p.id);
+		return stock && Number(stock.total_sisa) > 0;
+	});
 	const allSales = await db
 		.select({
 			id: sales.id,
@@ -30,7 +40,7 @@ export const load: PageServerLoad = async ({ locals }) => {
 		.orderBy(desc(sales.tanggal));
 
 	return {
-		products: allProducts,
+		products: productsWithStock,
 		sales: allSales
 	};
 };
