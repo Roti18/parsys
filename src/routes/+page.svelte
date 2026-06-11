@@ -17,6 +17,10 @@
   });
 </script>
 
+<svelte:head>
+  <title>Parsys | Dashboard</title>
+</svelte:head>
+
 <div class="space-y-10 pb-12 pt-2">
   <!-- Welcome Area -->
   <div>

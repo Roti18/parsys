@@ -47,6 +47,10 @@
 	});
 </script>
 
+<svelte:head>
+	<title>Parsys</title>
+</svelte:head>
+
 {#if visible}
 	<div class="fixed top-0 left-0 w-full h-[3px] z-[100] bg-transparent pointer-events-none">
 		<div 

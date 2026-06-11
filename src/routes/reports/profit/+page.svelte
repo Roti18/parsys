@@ -13,6 +13,10 @@
   }
 </script>
 
+<svelte:head>
+  <title>Parsys | Laporan Profit</title>
+</svelte:head>
+
 <div class="space-y-6">
   <div>
     <h2 class="text-2xl font-bold text-slate-800 dark:text-slate-100">Laporan Profit</h2>

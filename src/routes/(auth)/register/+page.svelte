@@ -6,6 +6,10 @@
   let loading = $state(false);
 </script>
 
+<svelte:head>
+  <title>Parsys | Register</title>
+</svelte:head>
+
 <div class="min-h-screen relative flex flex-col justify-center py-12 sm:px-6 lg:px-8 bg-[#f5f5f7] dark:bg-black overflow-hidden transition-colors duration-300">
 
   <div class="sm:mx-auto sm:w-full sm:max-w-md relative z-10">

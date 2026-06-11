@@ -43,6 +43,10 @@
   }
 </script>
 
+<svelte:head>
+  <title>Parsys | Penjualan</title>
+</svelte:head>
+
 <div class="bg-white dark:bg-white/[0.02] rounded-2xl  border border-slate-200 dark:border-white/[0.05] overflow-hidden transition-colors duration-300">
   <div class="px-4 sm:px-6 py-4 sm:py-5 border-b border-slate-200 dark:border-white/[0.05] flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-transparent dark:bg-white/[0.01]">
     <div>
