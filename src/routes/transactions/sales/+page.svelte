@@ -146,7 +146,7 @@
         bind:value={currentSale.product_id} 
         required 
         placeholder="Pilih Produk"
-        options={data.products.map(p => ({ value: p.id, label: `${p.sku} - ${p.nama} (${p.ukuran_ml}ml) - Ready: ${p.stok}` }))}
+        options={data.products.map(p => ({ value: p.id, label: `${p.sku} - ${p.nama} (${p.ukuran_ml}ml)` }))}
       />
     </div>
 

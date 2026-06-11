@@ -58,7 +58,10 @@
     </button>
     
     {#if user}
-      <div class="flex items-center gap-3 pl-3 sm:pl-4">
+      <div class="flex items-center gap-3 pl-3 sm:pl-4 border-l border-slate-200 dark:border-white/[0.08]">
+        <span class="text-sm font-medium text-slate-700 dark:text-zinc-300 hidden sm:block">
+          {user.email.split('@')[0]}
+        </span>
         <form action="/logout" method="POST">
           <button type="submit" class="text-slate-400 hover:text-rose-500 dark:hover:text-rose-400 p-1.5 rounded-md transition-colors" title="Logout">
             <LogOut class="w-4 h-4" />
