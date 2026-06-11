@@ -67,6 +67,8 @@ export const actions: Actions = {
 			let totalModalConsumed = 0;
 			let totalQtyConsumed = 0;
 
+			const restocksToConsume = [];
+
 			for (const r of availableRestocks) {
 				if (saleQtyNeeded <= 0) break;
 				if (r.sisa_qty > 0) {
@@ -80,8 +82,7 @@ export const actions: Actions = {
 					// Update sisa_qty di restock
 					await tx.update(restocks).set({ sisa_qty: newSisa }).where(eq(restocks.id, r.id));
 
-					// Catat ke sale_restocks
-					await tx.insert(sale_restocks).values({
+					restocksToConsume.push({
 						sale_id,
 						restock_id: r.id,
 						qty: take
@@ -92,7 +93,7 @@ export const actions: Actions = {
 			// Calculate rata-rata modal
 			const modal = totalQtyConsumed > 0 ? Math.floor(totalModalConsumed / totalQtyConsumed) : 0;
 
-			// Insert sale record
+			// Insert sale record PERTAMA agar foreign key tidak gagal
 			await tx.insert(sales).values({
 				id: sale_id,
 				user_id: locals.user.id,
@@ -104,6 +105,11 @@ export const actions: Actions = {
 				channel,
 				qty
 			});
+
+			// Insert ke sale_restocks SETELAH sales dibuat
+			if (restocksToConsume.length > 0) {
+				await tx.insert(sale_restocks).values(restocksToConsume);
+			}
 		});
 
 		return { success: true };
@@ -148,6 +154,8 @@ export const actions: Actions = {
 			let totalModalConsumed = 0;
 			let totalQtyConsumed = 0;
 
+			const restocksToConsume = [];
+
 			for (const r of availableRestocks) {
 				if (saleQtyNeeded <= 0) break;
 				if (r.sisa_qty > 0) {
@@ -160,7 +168,7 @@ export const actions: Actions = {
 
 					await tx.update(restocks).set({ sisa_qty: newSisa }).where(eq(restocks.id, r.id));
 
-					await tx.insert(sale_restocks).values({
+					restocksToConsume.push({
 						sale_id: id,
 						restock_id: r.id,
 						qty: take
@@ -179,6 +187,11 @@ export const actions: Actions = {
 				channel,
 				qty
 			}).where(eq(sales.id, id));
+
+			// Insert ke sale_restocks SETELAH sales diupdate/ada
+			if (restocksToConsume.length > 0) {
+				await tx.insert(sale_restocks).values(restocksToConsume);
+			}
 		});
 
 		return { success: true };
