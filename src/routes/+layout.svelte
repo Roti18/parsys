@@ -67,8 +67,8 @@
 		<Sidebar bind:isOpen={sidebarOpen} />
 		<div class="flex-1 min-w-0 lg:ml-64 flex flex-col min-h-screen">
 			<Header bind:sidebarOpen={sidebarOpen} user={data.user} />
-			<main class="flex-1 min-w-0 p-4 sm:p-8">
-				<div class="max-w-4xl mx-auto">
+			<main class="flex-1 min-w-0 p-4 sm:p-6 2xl:p-8">
+				<div class="max-w-[1400px] mx-auto">
 					{@render children()}
 				</div>
 			</main>
