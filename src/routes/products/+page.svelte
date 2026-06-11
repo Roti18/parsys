@@ -2,11 +2,14 @@
   import { enhance } from '$app/forms';
   import { Plus, Edit2, Trash2 } from 'lucide-svelte';
   import Modal from '$lib/components/Modal.svelte';
+  import ConfirmDeleteModal from '$lib/components/ConfirmDeleteModal.svelte';
 
   let { data } = $props();
   
   let showModal = $state(false);
   let editMode = $state(false);
+  let showDeleteModal = $state(false);
+  let deleteTargetId = $state('');
   let currentProduct = $state({ id: '', sku: '', nama: '', ukuran_ml: 30, status: 'ready' });
 
   function openAdd() {
@@ -66,12 +69,9 @@
               <button onclick={() => openEdit(product)} class="text-blue-600 hover:text-blue-900 dark:text-blue-400 dark:hover:text-blue-300 p-1.5 hover:bg-blue-50 dark:hover:bg-blue-500/10 rounded-md transition-colors">
                 <Edit2 class="w-4 h-4" />
               </button>
-              <form action="?/delete" method="POST" use:enhance class="inline">
-                <input type="hidden" name="id" value={product.id} />
-                <button type="submit" class="text-rose-600 hover:text-rose-900 dark:text-rose-400 dark:hover:text-rose-300 p-1.5 hover:bg-rose-50 dark:hover:bg-rose-500/10 rounded-md transition-colors" onclick={(e) => !confirm('Yakin hapus?') && e.preventDefault()}>
-                  <Trash2 class="w-4 h-4" />
-                </button>
-              </form>
+              <button onclick={() => { deleteTargetId = product.id; showDeleteModal = true; }} class="text-rose-600 hover:text-rose-900 dark:text-rose-400 dark:hover:text-rose-300 p-1.5 hover:bg-rose-50 dark:hover:bg-rose-500/10 rounded-md transition-colors">
+                <Trash2 class="w-4 h-4" />
+              </button>
             </td>
           </tr>
         {/each}
@@ -124,3 +124,10 @@
     </div>
   </form>
 </Modal>
+
+<ConfirmDeleteModal 
+  bind:show={showDeleteModal} 
+  action="?/delete" 
+  id={deleteTargetId} 
+  message="Apakah Anda yakin ingin menghapus data produk ini? Tindakan ini tidak dapat dibatalkan." 
+/>

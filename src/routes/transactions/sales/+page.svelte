@@ -1,12 +1,16 @@
 <script lang="ts">
   import { enhance } from '$app/forms';
-  import { Plus, ArrowUpFromLine } from 'lucide-svelte';
+  import { Plus, ArrowUpFromLine, Pencil, Trash2 } from 'lucide-svelte';
   import Modal from '$lib/components/Modal.svelte';
+  import ConfirmDeleteModal from '$lib/components/ConfirmDeleteModal.svelte';
   import { formatIDR } from '$lib/utils/currency';
 
   let { data } = $props();
   
   let showModal = $state(false);
+  let isEditing = $state(false);
+  let showDeleteModal = $state(false);
+  let deleteTargetId = $state('');
 
   function getTodayDate() {
     const d = new Date();
@@ -14,10 +18,27 @@
     return d.toISOString().slice(0,16);
   }
 
-  let currentSale = $state({ product_id: '', tanggal: getTodayDate(), harga_jual: 0, fee: 0, channel: 'Shopee', qty: 1 });
+  let currentSale = $state({ id: '', product_id: '', tanggal: getTodayDate(), harga_jual: 0, fee: 0, channel: 'Shopee', qty: 1 });
 
   function openAdd() {
-    currentSale = { product_id: '', tanggal: getTodayDate(), harga_jual: 0, fee: 0, channel: 'Shopee', qty: 1 };
+    isEditing = false;
+    currentSale = { id: '', product_id: '', tanggal: getTodayDate(), harga_jual: 0, fee: 0, channel: 'Shopee', qty: 1 };
+    showModal = true;
+  }
+
+  function openEdit(sale: any) {
+    isEditing = true;
+    const d = new Date(sale.tanggal);
+    d.setMinutes(d.getMinutes() - d.getTimezoneOffset());
+    currentSale = {
+      id: sale.id,
+      product_id: sale.product_id,
+      tanggal: d.toISOString().slice(0,16),
+      harga_jual: sale.harga_jual,
+      fee: sale.fee,
+      channel: sale.channel,
+      qty: sale.qty
+    };
     showModal = true;
   }
 </script>
@@ -43,6 +64,7 @@
           <th class="px-4 sm:px-6 py-4">Harga Jual & Qty</th>
           <th class="px-4 sm:px-6 py-4">Admin Fee</th>
           <th class="px-4 sm:px-6 py-4">Profit Bersih</th>
+          <th class="px-4 sm:px-6 py-4 text-right">Aksi</th>
         </tr>
       </thead>
       <tbody class="divide-y divide-slate-200 dark:divide-slate-700">
@@ -83,6 +105,16 @@
             <td class="px-4 sm:px-6 py-4 font-bold {profit >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}">
               {formatIDR(profit)}
             </td>
+            <td class="px-4 sm:px-6 py-4 text-right">
+              <div class="flex items-center justify-end gap-2">
+                <button onclick={() => openEdit(item)} class="p-1 text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors" title="Edit">
+                  <Pencil class="w-4 h-4" />
+                </button>
+                <button onclick={() => { deleteTargetId = item.id; showDeleteModal = true; }} class="p-1 text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 transition-colors" title="Hapus">
+                  <Trash2 class="w-4 h-4" />
+                </button>
+              </div>
+            </td>
           </tr>
         {/each}
       </tbody>
@@ -90,13 +122,16 @@
   </div>
 </div>
 
-<Modal bind:show={showModal} title="Input Penjualan">
-  <form action="?/create" method="POST" use:enhance={() => {
+<Modal bind:show={showModal} title={isEditing ? "Edit Penjualan" : "Input Penjualan"}>
+  <form action={isEditing ? "?/update" : "?/create"} method="POST" use:enhance={() => {
     return async ({ update }) => {
       await update();
       showModal = false;
     };
   }} class="space-y-4">
+    {#if isEditing}
+      <input type="hidden" name="id" value={currentSale.id} />
+    {/if}
     
     <div>
       <label for="product_id" class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Produk</label>
@@ -161,3 +196,10 @@
     </div>
   </form>
 </Modal>
+
+<ConfirmDeleteModal 
+  bind:show={showDeleteModal} 
+  action="?/delete" 
+  id={deleteTargetId} 
+  message="Apakah Anda yakin ingin menghapus data penjualan ini? Tindakan ini tidak dapat dibatalkan." 
+/>

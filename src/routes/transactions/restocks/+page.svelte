@@ -1,12 +1,16 @@
 <script lang="ts">
   import { enhance } from '$app/forms';
-  import { Plus, ArrowDownToLine } from 'lucide-svelte';
+  import { Plus, ArrowDownToLine, Pencil, Trash2 } from 'lucide-svelte';
   import Modal from '$lib/components/Modal.svelte';
+  import ConfirmDeleteModal from '$lib/components/ConfirmDeleteModal.svelte';
   import { formatIDR } from '$lib/utils/currency';
 
   let { data } = $props();
   
   let showModal = $state(false);
+  let isEditing = $state(false);
+  let showDeleteModal = $state(false);
+  let deleteTargetId = $state('');
 
   function getTodayDate() {
     const d = new Date();
@@ -14,10 +18,25 @@
     return d.toISOString().slice(0,16);
   }
 
-  let currentRestock = $state({ product_id: '', tanggal: getTodayDate(), modal: 0, qty: 1 });
+  let currentRestock = $state({ id: '', product_id: '', tanggal: getTodayDate(), modal: 0, qty: 1 });
 
   function openAdd() {
-    currentRestock = { product_id: '', tanggal: getTodayDate(), modal: 0, qty: 1 };
+    isEditing = false;
+    currentRestock = { id: '', product_id: '', tanggal: getTodayDate(), modal: 0, qty: 1 };
+    showModal = true;
+  }
+
+  function openEdit(restock: any) {
+    isEditing = true;
+    const d = new Date(restock.tanggal);
+    d.setMinutes(d.getMinutes() - d.getTimezoneOffset());
+    currentRestock = {
+      id: restock.id,
+      product_id: restock.product_id,
+      tanggal: d.toISOString().slice(0,16),
+      modal: restock.modal,
+      qty: restock.qty
+    };
     showModal = true;
   }
 </script>
@@ -42,6 +61,7 @@
           <th class="px-4 sm:px-6 py-4">Harga Modal / pcs</th>
           <th class="px-4 sm:px-6 py-4">Qty</th>
           <th class="px-4 sm:px-6 py-4">Total Modal</th>
+          <th class="px-4 sm:px-6 py-4 text-right">Aksi</th>
         </tr>
       </thead>
       <tbody class="divide-y divide-slate-200 dark:divide-slate-700">
@@ -65,6 +85,16 @@
               </span>
             </td>
             <td class="px-4 sm:px-6 py-4 font-medium text-slate-900 dark:text-slate-200">{formatIDR(item.modal * item.qty)}</td>
+            <td class="px-4 sm:px-6 py-4 text-right">
+              <div class="flex items-center justify-end gap-2">
+                <button onclick={() => openEdit(item)} class="p-1 text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors" title="Edit">
+                  <Pencil class="w-4 h-4" />
+                </button>
+                <button onclick={() => { deleteTargetId = item.id; showDeleteModal = true; }} class="p-1 text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 transition-colors" title="Hapus">
+                  <Trash2 class="w-4 h-4" />
+                </button>
+              </div>
+            </td>
           </tr>
         {/each}
       </tbody>
@@ -72,13 +102,16 @@
   </div>
 </div>
 
-<Modal bind:show={showModal} title="Input Restock">
-  <form action="?/create" method="POST" use:enhance={() => {
+<Modal bind:show={showModal} title={isEditing ? "Edit Restock" : "Input Restock"}>
+  <form action={isEditing ? "?/update" : "?/create"} method="POST" use:enhance={() => {
     return async ({ update }) => {
       await update();
       showModal = false;
     };
   }} class="space-y-4">
+    {#if isEditing}
+      <input type="hidden" name="id" value={currentRestock.id} />
+    {/if}
     
     <div>
       <label for="product_id" class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Produk</label>
@@ -121,3 +154,10 @@
     </div>
   </form>
 </Modal>
+
+<ConfirmDeleteModal 
+  bind:show={showDeleteModal} 
+  action="?/delete" 
+  id={deleteTargetId} 
+  message="Apakah Anda yakin ingin menghapus data restock ini? Tindakan ini tidak dapat dibatalkan." 
+/>
