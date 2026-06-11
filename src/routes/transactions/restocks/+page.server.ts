@@ -11,6 +11,7 @@ export const load: PageServerLoad = async ({ locals }) => {
 	const allRestocks = await db
 		.select({
 			id: restocks.id,
+			product_id: restocks.product_id,
 			tanggal: restocks.tanggal,
 			modal: restocks.modal,
 			qty: restocks.qty,
@@ -58,6 +59,43 @@ export const actions: Actions = {
 		// If product was "habis", we should ideally mark it "ready"
 		await db.update(products).set({ status: 'ready' }).where(and(eq(products.id, product_id), eq(products.user_id, locals.user.id)));
 
+		return { success: true };
+	},
+	update: async ({ request, locals }) => {
+		if (!locals.user) return fail(401, { message: 'Unauthorized' });
+
+		const formData = await request.formData();
+		const id = formData.get('id') as string;
+		const product_id = formData.get('product_id') as string;
+		const tanggal_str = formData.get('tanggal') as string;
+		const modal = parseInt(formData.get('modal') as string);
+		const qty = parseInt(formData.get('qty') as string);
+
+		const tanggal = new Date(tanggal_str);
+
+		const restockOwner = await db.select().from(restocks).where(and(eq(restocks.id, id), eq(restocks.user_id, locals.user.id)));
+		if (restockOwner.length === 0) return fail(403, { message: 'Forbidden' });
+
+		await db.update(restocks).set({
+			product_id,
+			tanggal,
+			modal,
+			qty
+		}).where(and(eq(restocks.id, id), eq(restocks.user_id, locals.user.id)));
+
+		return { success: true };
+	},
+	delete: async ({ request, locals }) => {
+		if (!locals.user) return fail(401, { message: 'Unauthorized' });
+
+		const formData = await request.formData();
+		const id = formData.get('id') as string;
+
+		const restockOwner = await db.select().from(restocks).where(and(eq(restocks.id, id), eq(restocks.user_id, locals.user.id)));
+		if (restockOwner.length === 0) return fail(403, { message: 'Forbidden' });
+
+		await db.delete(restocks).where(and(eq(restocks.id, id), eq(restocks.user_id, locals.user.id)));
+		
 		return { success: true };
 	}
 };

@@ -11,6 +11,7 @@ export const load: PageServerLoad = async ({ locals }) => {
 	const allSales = await db
 		.select({
 			id: sales.id,
+			product_id: sales.product_id,
 			tanggal: sales.tanggal,
 			harga_jual: sales.harga_jual,
 			modal: sales.modal,
@@ -73,6 +74,48 @@ export const actions: Actions = {
 			qty
 		});
 
+		return { success: true };
+	},
+	update: async ({ request, locals }) => {
+		if (!locals.user) return fail(401, { message: 'Unauthorized' });
+
+		const formData = await request.formData();
+		const id = formData.get('id') as string;
+		const product_id = formData.get('product_id') as string;
+		const tanggal_str = formData.get('tanggal') as string;
+		const harga_jual = parseInt(formData.get('harga_jual') as string);
+		const fee = parseInt(formData.get('fee') as string);
+		const channel = formData.get('channel') as string;
+		const qty = parseInt(formData.get('qty') as string);
+
+		const tanggal = new Date(tanggal_str);
+
+		// Verify sale belongs to user
+		const saleOwner = await db.select().from(sales).where(and(eq(sales.id, id), eq(sales.user_id, locals.user.id)));
+		if (saleOwner.length === 0) return fail(403, { message: 'Forbidden' });
+
+		await db.update(sales).set({
+			product_id,
+			tanggal,
+			harga_jual,
+			fee,
+			channel,
+			qty
+		}).where(and(eq(sales.id, id), eq(sales.user_id, locals.user.id)));
+
+		return { success: true };
+	},
+	delete: async ({ request, locals }) => {
+		if (!locals.user) return fail(401, { message: 'Unauthorized' });
+		
+		const formData = await request.formData();
+		const id = formData.get('id') as string;
+
+		const saleOwner = await db.select().from(sales).where(and(eq(sales.id, id), eq(sales.user_id, locals.user.id)));
+		if (saleOwner.length === 0) return fail(403, { message: 'Forbidden' });
+
+		await db.delete(sales).where(and(eq(sales.id, id), eq(sales.user_id, locals.user.id)));
+		
 		return { success: true };
 	}
 };
