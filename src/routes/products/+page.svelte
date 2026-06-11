@@ -3,6 +3,7 @@
   import { Plus, Edit2, Trash2 } from 'lucide-svelte';
   import Modal from '$lib/components/Modal.svelte';
   import ConfirmDeleteModal from '$lib/components/ConfirmDeleteModal.svelte';
+  import Select from '$lib/components/Select.svelte';
 
   let { data } = $props();
   
@@ -111,11 +112,16 @@
     </div>
 
     <div>
-      <label for="status" class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Status</label>
-      <select id="status" name="status" bind:value={currentProduct.status} class="w-full rounded-lg border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white  focus:border-blue-500 focus:ring-blue-500 text-sm">
-        <option value="ready">Ready</option>
-        <option value="habis">Habis</option>
-      </select>
+      <label for="status" class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">Status</label>
+      <Select 
+        id="status" 
+        name="status" 
+        bind:value={currentProduct.status} 
+        options={[
+          { value: 'ready', label: 'Ready' },
+          { value: 'habis', label: 'Habis' }
+        ]} 
+      />
     </div>
 
     <div class="pt-4 flex justify-end gap-3">

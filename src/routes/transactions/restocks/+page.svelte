@@ -3,6 +3,7 @@
   import { Plus, ArrowDownToLine, Pencil, Trash2 } from 'lucide-svelte';
   import Modal from '$lib/components/Modal.svelte';
   import ConfirmDeleteModal from '$lib/components/ConfirmDeleteModal.svelte';
+  import Select from '$lib/components/Select.svelte';
   import { formatIDR } from '$lib/utils/currency';
 
   let { data } = $props();
@@ -118,13 +119,15 @@
     {/if}
     
     <div>
-      <label for="product_id" class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Produk</label>
-      <select id="product_id" name="product_id" bind:value={currentRestock.product_id} required class="w-full rounded-lg border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white  focus:border-blue-500 focus:ring-blue-500 text-sm">
-        <option value="" disabled>Pilih Produk...</option>
-        {#each data.products as product}
-          <option value={product.id}>{product.nama} ({product.ukuran_ml}ml) - {product.sku}</option>
-        {/each}
-      </select>
+      <label for="product_id" class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">Produk</label>
+      <Select 
+        id="product_id" 
+        name="product_id" 
+        bind:value={currentRestock.product_id} 
+        required 
+        placeholder="Pilih Produk"
+        options={data.products.map(p => ({ value: p.id, label: `${p.sku} - ${p.nama} (${p.ukuran_ml}ml)` }))}
+      />
     </div>
 
     <div>
