@@ -9,12 +9,12 @@ export const load: PageServerLoad = async ({ locals }) => {
 	}
 
 	// Total Omset (Gross Revenue)
-	const omsetResult = await db.select({ value: sum(sql`${sales.harga_jual} * ${sales.qty}`) }).from(sales).where(eq(sales.user_id, locals.user.id));
+	const omsetResult = await db.select({ value: sum(sales.harga_jual) }).from(sales).where(eq(sales.user_id, locals.user.id));
 	const totalOmset = Number(omsetResult[0]?.value) || 0;
 
-	// Total Profit: (Harga Jual * Qty) - (Modal * Qty) - Fee
+	// Total Profit: Harga Jual - (Modal * Qty) - Fee
 	const profitResult = await db.select({
-		value: sum(sql`(${sales.harga_jual} * ${sales.qty}) - (${sales.modal} * ${sales.qty}) - ${sales.fee}`)
+		value: sum(sql`${sales.harga_jual} - (${sales.modal} * ${sales.qty}) - ${sales.fee}`)
 	}).from(sales).where(eq(sales.user_id, locals.user.id));
 	const totalProfit = Number(profitResult[0]?.value) || 0;
 

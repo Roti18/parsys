@@ -90,7 +90,7 @@
           </tr>
         {/if}
         {#each filteredSales as item}
-          {@const gross = item.harga_jual * item.qty}
+          {@const gross = item.harga_jual}
           {@const totalModal = item.modal * item.qty}
           {@const profit = gross - totalModal - item.fee}
           <tr class="hover:bg-transparent dark:hover:bg-white/[0.04] transition-colors">
@@ -109,7 +109,7 @@
             </td>
             <td class="px-4 sm:px-6 py-4 whitespace-nowrap">
               <div class="flex flex-col">
-                <span class="font-medium text-slate-900 dark:text-slate-200">{formatIDR(item.harga_jual)} <span class="text-xs text-slate-500 dark:text-slate-400 font-normal">/pcs</span></span>
+                <span class="font-medium text-slate-900 dark:text-slate-200">{formatIDR(item.harga_jual)}</span>
                 <span class="inline-flex items-center gap-1 text-xs text-blue-600 dark:text-blue-400 mt-1 font-semibold">
                   <ArrowUpFromLine class="w-3 h-3" /> Qty: {item.qty}
                 </span>
@@ -187,7 +187,7 @@
 
     <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
       <div>
-        <label for="harga_jual" class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Harga Jual / pcs</label>
+        <label for="harga_jual" class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Total Harga Jual</label>
         <div class="relative">
           <div class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
             <span class="text-slate-500 dark:text-slate-400 sm:text-sm">Rp</span>

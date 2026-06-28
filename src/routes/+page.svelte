@@ -115,7 +115,7 @@
               </div>
             </div>
             <div class="text-right">
-              <p class="font-medium text-sm text-slate-900 dark:text-zinc-300">+{formatIDR(sale.harga_jual * sale.qty)}</p>
+              <p class="font-medium text-sm text-slate-900 dark:text-zinc-300">+{formatIDR(sale.harga_jual)}</p>
             </div>
           </div>
         {/each}

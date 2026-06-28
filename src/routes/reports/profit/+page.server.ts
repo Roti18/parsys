@@ -14,8 +14,8 @@ export const load: PageServerLoad = async ({ locals }) => {
 
 	const allSales = await db.select({
 		tanggal: sales.tanggal,
-		omset: sql<number>`(${sales.harga_jual} * ${sales.qty})`,
-		profit: sql<number>`((${sales.harga_jual} * ${sales.qty}) - (${sales.modal} * ${sales.qty}) - ${sales.fee})`,
+		omset: sales.harga_jual,
+		profit: sql<number>`${sales.harga_jual} - (${sales.modal} * ${sales.qty}) - ${sales.fee}`,
 		qty: sales.qty,
 		fee: sales.fee
 	}).from(sales).where(eq(sales.user_id, locals.user.id));
