@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { Wallet, TrendingUp, Package, Box, ShoppingCart, Plus, Truck, ArrowRight, Activity } from 'lucide-svelte';
+  import { TrendingUp, Package, ShoppingCart, Truck, ArrowRight, DollarSign, Store, Archive } from 'lucide-svelte';
   import StatCard from '$lib/components/StatCard.svelte';
   import { formatIDR } from '$lib/utils/currency';
   import { page } from '$app/stores';
@@ -29,27 +29,32 @@
   </div>
 
   <!-- Key Metrics -->
-  <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-    <StatCard 
-      title="Total Profit Bersih" 
-      value={formatIDR(data.totalProfit)} 
-      icon={TrendingUp} 
+  <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
+    <StatCard
+      title="Omzet"
+      value={formatIDR(data.omzet)}
+      icon={DollarSign}
       highlight={true}
     />
-    <StatCard 
-      title="Total Omset Kotor" 
-      value={formatIDR(data.totalOmset)} 
-      icon={Wallet} 
+    <StatCard
+      title="Pendapatan Setelah Fee"
+      value={formatIDR(data.pendapatanSetelahFee)}
+      icon={Store}
     />
-    <StatCard 
-      title="Barang Terjual" 
-      value="{data.barangTerjual} pcs" 
-      icon={Package} 
+    <StatCard
+      title="Profit Bersih"
+      value={formatIDR(data.profitBersih)}
+      icon={TrendingUp}
     />
-    <StatCard 
-      title="Stok Tersisa" 
-      value="{data.stokTersisa} pcs" 
-      icon={Box} 
+    <StatCard
+      title="Barang Terjual"
+      value="{data.barangTerjual} pcs"
+      icon={Package}
+    />
+    <StatCard
+      title="Nilai Stok"
+      value={formatIDR(data.nilaiStok)}
+      icon={Archive}
     />
   </div>
 
@@ -65,7 +70,7 @@
           <h3 class="font-medium text-sm text-slate-900 dark:text-zinc-200">Input Penjualan</h3>
         </div>
       </a>
-      
+
       <a href="/transactions/restocks" class="flex items-center gap-3 p-3 rounded-xl bg-white dark:bg-white/[0.03] hover:dark:bg-white/[0.06] transition-colors">
         <div class="w-8 h-8 rounded-full flex items-center justify-center text-[#ff2d55]">
           <Truck class="w-4 h-4" strokeWidth={2.5} />
@@ -94,14 +99,14 @@
         Lihat Semua <ArrowRight class="w-3 h-3" />
       </a>
     </div>
-    
+
     <div class="rounded-2xl bg-white dark:bg-white/[0.02] overflow-hidden">
       {#if data.recentSales.length === 0}
         <div class="p-8 text-center">
           <p class="text-slate-500 dark:text-zinc-500 text-sm">Belum ada penjualan tercatat</p>
         </div>
       {/if}
-      
+
       <div class="divide-y divide-slate-100 dark:divide-white/[0.05]">
         {#each data.recentSales as sale}
           <div class="px-5 py-3.5 flex items-center justify-between hover:bg-slate-50 dark:hover:bg-white/[0.02] transition-colors">
@@ -115,7 +120,14 @@
               </div>
             </div>
             <div class="text-right">
-              <p class="font-medium text-sm text-slate-900 dark:text-zinc-300">+{formatIDR(sale.harga_jual)}</p>
+              {#if sale.channel === 'Offline' || sale.channel === 'WhatsApp'}
+                <p class="font-medium text-sm text-slate-900 dark:text-zinc-300">+{formatIDR(sale.harga_jual)}</p>
+              {:else}
+                <p class="font-medium text-sm text-slate-900 dark:text-zinc-300">+{formatIDR(sale.harga_jual - sale.fee)}</p>
+                {#if sale.fee > 0}
+                  <p class="text-[11px] text-rose-500 dark:text-rose-400">Fee: -{formatIDR(sale.fee)}</p>
+                {/if}
+              {/if}
             </div>
           </div>
         {/each}
