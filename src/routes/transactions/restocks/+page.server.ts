@@ -43,7 +43,14 @@ export const actions: Actions = {
 		const modal = parseInt(formData.get('modal') as string);
 		const qty = parseInt(formData.get('qty') as string);
 
+		if (!product_id || !tanggal_str || isNaN(modal) || isNaN(qty) || modal < 0 || qty <= 0) {
+			return fail(400, { message: 'Data input tidak valid' });
+		}
+
 		const tanggal = new Date(tanggal_str);
+		if (isNaN(tanggal.getTime())) {
+			return fail(400, { message: 'Format tanggal tidak valid' });
+		}
 
 		// Verify product belongs to user
 		const productOwner = await db.select().from(products).where(and(eq(products.id, product_id), eq(products.user_id, locals.user.id)));
@@ -73,10 +80,21 @@ export const actions: Actions = {
 		const modal = parseInt(formData.get('modal') as string);
 		const qty = parseInt(formData.get('qty') as string);
 
+		if (!id || !product_id || !tanggal_str || isNaN(modal) || isNaN(qty) || modal < 0 || qty <= 0) {
+			return fail(400, { message: 'Data input tidak valid' });
+		}
+
 		const tanggal = new Date(tanggal_str);
+		if (isNaN(tanggal.getTime())) {
+			return fail(400, { message: 'Format tanggal tidak valid' });
+		}
 
 		const restockOwner = await db.select().from(restocks).where(and(eq(restocks.id, id), eq(restocks.user_id, locals.user.id)));
 		if (restockOwner.length === 0) return fail(403, { message: 'Forbidden' });
+
+		// Verify target product also belongs to user (Prevent IDOR)
+		const productOwner = await db.select().from(products).where(and(eq(products.id, product_id), eq(products.user_id, locals.user.id)));
+		if (productOwner.length === 0) return fail(403, { message: 'Forbidden' });
 
 		// Jika qty diubah, kita harus menyesuaikan sisa_qty juga (qty_baru - qty_lama)
 		const selisih = qty - restockOwner[0].qty;
@@ -97,6 +115,8 @@ export const actions: Actions = {
 
 		const formData = await request.formData();
 		const id = formData.get('id') as string;
+
+		if (!id) return fail(400, { message: 'ID tidak valid' });
 
 		const restockOwner = await db.select().from(restocks).where(and(eq(restocks.id, id), eq(restocks.user_id, locals.user.id)));
 		if (restockOwner.length === 0) return fail(403, { message: 'Forbidden' });

@@ -27,10 +27,14 @@ export const actions: Actions = {
 		if (!locals.user) return fail(401, { message: 'Unauthorized' });
 
 		const formData = await request.formData();
-		const sku = formData.get('sku') as string;
-		const nama = formData.get('nama') as string;
+		const sku = (formData.get('sku') as string)?.trim();
+		const nama = (formData.get('nama') as string)?.trim();
 		const ukuran_ml = parseInt(formData.get('ukuran_ml') as string);
-		const status = formData.get('status') as string;
+		const status = formData.get('status') === 'habis' ? 'habis' : 'ready';
+
+		if (!sku || !nama || isNaN(ukuran_ml) || ukuran_ml <= 0) {
+			return fail(400, { message: 'Data produk tidak valid' });
+		}
 
 		await db.insert(products).values({
 			user_id: locals.user.id,
@@ -47,10 +51,17 @@ export const actions: Actions = {
 
 		const formData = await request.formData();
 		const id = formData.get('id') as string;
-		const sku = formData.get('sku') as string;
-		const nama = formData.get('nama') as string;
+		const sku = (formData.get('sku') as string)?.trim();
+		const nama = (formData.get('nama') as string)?.trim();
 		const ukuran_ml = parseInt(formData.get('ukuran_ml') as string);
-		const status = formData.get('status') as string;
+		const status = formData.get('status') === 'habis' ? 'habis' : 'ready';
+
+		if (!id || !sku || !nama || isNaN(ukuran_ml) || ukuran_ml <= 0) {
+			return fail(400, { message: 'Data produk tidak valid' });
+		}
+
+		const existing = await db.select().from(products).where(and(eq(products.id, id), eq(products.user_id, locals.user.id)));
+		if (existing.length === 0) return fail(403, { message: 'Forbidden' });
 
 		await db.update(products).set({
 			sku,
@@ -66,6 +77,11 @@ export const actions: Actions = {
 
 		const formData = await request.formData();
 		const id = formData.get('id') as string;
+
+		if (!id) return fail(400, { message: 'ID tidak valid' });
+
+		const existing = await db.select().from(products).where(and(eq(products.id, id), eq(products.user_id, locals.user.id)));
+		if (existing.length === 0) return fail(403, { message: 'Forbidden' });
 
 		await db.delete(products).where(and(eq(products.id, id), eq(products.user_id, locals.user.id)));
 

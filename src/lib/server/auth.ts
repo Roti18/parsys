@@ -15,6 +15,7 @@ export function verifyPassword(password: string, storedHash: string): boolean {
 	if (!salt || !key) return false;
 	const hashBuffer = crypto.scryptSync(password, salt, 64);
 	const keyBuffer = Buffer.from(key, 'hex');
+	if (hashBuffer.length !== keyBuffer.length) return false;
 	return crypto.timingSafeEqual(hashBuffer, keyBuffer);
 }
 

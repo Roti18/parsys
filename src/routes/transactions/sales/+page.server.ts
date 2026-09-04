@@ -53,11 +53,18 @@ export const actions: Actions = {
 		const product_id = formData.get('product_id') as string;
 		const tanggal_str = formData.get('tanggal') as string;
 		const harga_jual = parseInt(formData.get('harga_jual') as string);
-		const fee = parseInt(formData.get('fee') as string);
+		const fee = parseInt(formData.get('fee') as string) || 0;
 		const channel = formData.get('channel') as string;
 		const qty = parseInt(formData.get('qty') as string);
 
+		if (!product_id || !tanggal_str || !channel || isNaN(harga_jual) || isNaN(fee) || isNaN(qty) || harga_jual < 0 || fee < 0 || qty <= 0) {
+			return fail(400, { message: 'Data input tidak valid' });
+		}
+
 		const tanggal = new Date(tanggal_str);
+		if (isNaN(tanggal.getTime())) {
+			return fail(400, { message: 'Format tanggal tidak valid' });
+		}
 
 		// Verify product belongs to user
 		const productOwner = await db.select().from(products).where(and(eq(products.id, product_id), eq(products.user_id, locals.user.id)));
@@ -90,7 +97,7 @@ export const actions: Actions = {
 					totalQtyConsumed += take;
 
 					// Update sisa_qty di restock
-					await tx.update(restocks).set({ sisa_qty: newSisa }).where(eq(restocks.id, r.id));
+					await tx.update(restocks).set({ sisa_qty: newSisa }).where(and(eq(restocks.id, r.id), eq(restocks.user_id, locals.user.id)));
 
 					restocksToConsume.push({
 						sale_id,
@@ -132,23 +139,34 @@ export const actions: Actions = {
 		const product_id = formData.get('product_id') as string;
 		const tanggal_str = formData.get('tanggal') as string;
 		const harga_jual = parseInt(formData.get('harga_jual') as string);
-		const fee = parseInt(formData.get('fee') as string);
+		const fee = parseInt(formData.get('fee') as string) || 0;
 		const channel = formData.get('channel') as string;
 		const qty = parseInt(formData.get('qty') as string);
 
+		if (!id || !product_id || !tanggal_str || !channel || isNaN(harga_jual) || isNaN(fee) || isNaN(qty) || harga_jual < 0 || fee < 0 || qty <= 0) {
+			return fail(400, { message: 'Data input tidak valid' });
+		}
+
 		const tanggal = new Date(tanggal_str);
+		if (isNaN(tanggal.getTime())) {
+			return fail(400, { message: 'Format tanggal tidak valid' });
+		}
 
 		// Verify sale belongs to user
 		const saleOwner = await db.select().from(sales).where(and(eq(sales.id, id), eq(sales.user_id, locals.user.id)));
 		if (saleOwner.length === 0) return fail(403, { message: 'Forbidden' });
 
+		// Verify target product belongs to user (Prevent IDOR)
+		const productOwner = await db.select().from(products).where(and(eq(products.id, product_id), eq(products.user_id, locals.user.id)));
+		if (productOwner.length === 0) return fail(403, { message: 'Forbidden' });
+
 		await db.transaction(async (tx) => {
 			// REVERT OLD SALE DEDUCTIONS
 			const oldConsumptions = await tx.select().from(sale_restocks).where(eq(sale_restocks.sale_id, id));
 			for (const sc of oldConsumptions) {
-				const r = await tx.select().from(restocks).where(eq(restocks.id, sc.restock_id));
+				const r = await tx.select().from(restocks).where(and(eq(restocks.id, sc.restock_id), eq(restocks.user_id, locals.user.id)));
 				if (r.length > 0) {
-					await tx.update(restocks).set({ sisa_qty: r[0].sisa_qty + sc.qty }).where(eq(restocks.id, sc.restock_id));
+					await tx.update(restocks).set({ sisa_qty: r[0].sisa_qty + sc.qty }).where(and(eq(restocks.id, sc.restock_id), eq(restocks.user_id, locals.user.id)));
 				}
 			}
 			await tx.delete(sale_restocks).where(eq(sale_restocks.sale_id, id));
@@ -176,7 +194,7 @@ export const actions: Actions = {
 					totalModalConsumed += take * r.modal;
 					totalQtyConsumed += take;
 
-					await tx.update(restocks).set({ sisa_qty: newSisa }).where(eq(restocks.id, r.id));
+					await tx.update(restocks).set({ sisa_qty: newSisa }).where(and(eq(restocks.id, r.id), eq(restocks.user_id, locals.user.id)));
 
 					restocksToConsume.push({
 						sale_id: id,
@@ -196,7 +214,7 @@ export const actions: Actions = {
 				fee,
 				channel,
 				qty
-			}).where(eq(sales.id, id));
+			}).where(and(eq(sales.id, id), eq(sales.user_id, locals.user.id)));
 
 			// Insert ke sale_restocks SETELAH sales diupdate/ada
 			if (restocksToConsume.length > 0) {
@@ -212,6 +230,8 @@ export const actions: Actions = {
 		const formData = await request.formData();
 		const id = formData.get('id') as string;
 
+		if (!id) return fail(400, { message: 'ID tidak valid' });
+
 		const saleOwner = await db.select().from(sales).where(and(eq(sales.id, id), eq(sales.user_id, locals.user.id)));
 		if (saleOwner.length === 0) return fail(403, { message: 'Forbidden' });
 
@@ -219,15 +239,15 @@ export const actions: Actions = {
 			// REVERT OLD SALE DEDUCTIONS
 			const oldConsumptions = await tx.select().from(sale_restocks).where(eq(sale_restocks.sale_id, id));
 			for (const sc of oldConsumptions) {
-				const r = await tx.select().from(restocks).where(eq(restocks.id, sc.restock_id));
+				const r = await tx.select().from(restocks).where(and(eq(restocks.id, sc.restock_id), eq(restocks.user_id, locals.user.id)));
 				if (r.length > 0) {
-					await tx.update(restocks).set({ sisa_qty: r[0].sisa_qty + sc.qty }).where(eq(restocks.id, sc.restock_id));
+					await tx.update(restocks).set({ sisa_qty: r[0].sisa_qty + sc.qty }).where(and(eq(restocks.id, sc.restock_id), eq(restocks.user_id, locals.user.id)));
 				}
 			}
 			
 			// Deleting sales will cascade delete sale_restocks, but we do it manually anyway
 			await tx.delete(sale_restocks).where(eq(sale_restocks.sale_id, id));
-			await tx.delete(sales).where(eq(sales.id, id));
+			await tx.delete(sales).where(and(eq(sales.id, id), eq(sales.user_id, locals.user.id)));
 		});
 		
 		return { success: true };
