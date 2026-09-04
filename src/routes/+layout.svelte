@@ -9,8 +9,10 @@
 
 	let { children, data } = $props();
 	let sidebarOpen = $state(false);
-	
-	let isAuthRoute = $derived($page.url.pathname.startsWith('/login') || $page.url.pathname.startsWith('/register'));
+
+	let isAuthRoute = $derived(
+		$page.url.pathname.startsWith('/login') || $page.url.pathname.startsWith('/register')
+	);
 
 	let progress = tweened(0, {
 		duration: 300,
@@ -25,7 +27,7 @@
 			visible = true;
 			fadingOut = false;
 			progress.set(0, { duration: 0 });
-			
+
 			setTimeout(() => {
 				if ($navigating) {
 					progress.set(0.3, { duration: 500 });
@@ -52,9 +54,9 @@
 </svelte:head>
 
 {#if visible}
-	<div class="fixed top-0 left-0 w-full h-[3px] z-[100] bg-transparent pointer-events-none">
-		<div 
-			class="h-full bg-blue-600 dark:bg-blue-500 transition-opacity duration-300 shadow-[0_0_10px_rgba(59,130,246,0.6)]" 
+	<div class="fixed top-0 left-0 w-full h-0.75 z-100 bg-transparent pointer-events-none">
+		<div
+			class="h-full bg-blue-600 dark:bg-blue-500 transition-opacity duration-300 shadow-[0_0_10px_rgba(59,130,246,0.6)]"
 			style="width: {$progress * 100}%; opacity: {fadingOut ? 0 : 1};"
 		></div>
 	</div>
@@ -63,12 +65,14 @@
 {#if isAuthRoute}
 	{@render children()}
 {:else}
-	<div class="min-h-screen bg-slate-50 dark:bg-[#141414] text-slate-900 dark:text-zinc-100 flex transition-colors duration-300">
+	<div
+		class="min-h-screen bg-slate-50 dark:bg-[#141414] text-slate-900 dark:text-zinc-100 flex transition-colors duration-300"
+	>
 		<Sidebar bind:isOpen={sidebarOpen} />
 		<div class="flex-1 min-w-0 lg:ml-64 flex flex-col min-h-screen">
-			<Header bind:sidebarOpen={sidebarOpen} user={data.user} />
+			<Header bind:sidebarOpen user={data.user} />
 			<main class="flex-1 min-w-0 p-4 sm:p-6 2xl:p-8">
-				<div class="max-w-[1400px] mx-auto">
+				<div class="max-w-350 mx-auto">
 					{@render children()}
 				</div>
 			</main>
